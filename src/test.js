@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, BookOpen, ChevronLeft, ChevronRight, X, Check, AlertCircle, Users, Star, ChevronDown, Info, GraduationCap, UserCheck, Building } from 'lucide-react';
 
@@ -27,11 +26,11 @@ const LessonManagementSystem = () => {
   ];
 
   const hiredTeachers = [
-    { id: 1, name: 'Mrs. Johnson', subject: 'Mathematics', rating: 4.8, avatar: '👩‍🏫', color: 'bg-green-700' },
-    { id: 2, name: 'Mr. Smith', subject: 'English', rating: 4.9, avatar: '👨‍🏫', color: 'bg-[#6f9685]' },
-    { id: 3, name: 'Dr. Williams', subject: 'Science', rating: 4.7, avatar: '👨‍🔬', color: 'bg-green-700' },
-    { id: 4, name: 'Ms. Davis', subject: 'History', rating: 4.6, avatar: '👩‍🏫', color: 'bg-green-800' },
-    { id: 5, name: 'Prof. Brown', subject: 'Geography', rating: 4.8, avatar: '👨‍🏫', color: 'bg-[#A7C6B9]' }
+    { id: 1, name: 'Mrs. Johnson', subject: 'Mathematics', rating: 4.8, avatar: '👩‍🏫', color: 'bg-indigo-500' },
+    { id: 2, name: 'Mr. Smith', subject: 'English', rating: 4.9, avatar: '👨‍🏫', color: 'bg-emerald-500' },
+    { id: 3, name: 'Dr. Williams', subject: 'Science', rating: 4.7, avatar: '👨‍🔬', color: 'bg-rose-500' },
+    { id: 4, name: 'Ms. Davis', subject: 'History', rating: 4.6, avatar: '👩‍🏫', color: 'bg-amber-500' },
+    { id: 5, name: 'Prof. Brown', subject: 'Geography', rating: 4.8, avatar: '👨‍🏫', color: 'bg-cyan-500' }
   ];
 
   const subjects = [
@@ -382,30 +381,11 @@ const LessonManagementSystem = () => {
                         </div>
                       </div>
                     ) : learningType === 'tutor' && availableTeachers.length > 0 ? (
-                      // tutorssssssss
                       <div className="text-center w-full">
                         <div className="text-xs font-semibold text-blue-700">
                           {availableTeachers.length} {availableTeachers.length === 1 ? 'tutor' : 'tutors'}
                         </div>
                       </div>
-                      // <div className="text-center w-full flex items-center justify-center">
-                      //   <div className="flex items-center -space-x-1">
-                      //     {availableTeachers.slice(0, 1).map((teacher, index) => (
-                      //       <div
-                      //         key={teacher.id}
-                      //         className={`w-6 h-6 rounded-full ${teacher.color} flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow-sm`}
-                      //         style={{ zIndex: availableTeachers.length - index }}
-                      //       >
-                      //         {teacher.name.charAt(0)}
-                      //       </div>
-                      //     ))}
-                      //     {availableTeachers.length > 1 && (
-                      //       <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-bold border-2 border-white shadow-sm">
-                      //         +{availableTeachers.length - 1}
-                      //       </div>
-                      //     )}
-                      //   </div>
-                      // </div>
                     ) : learningType === 'silo' && canDrop ? (
                       <div className="text-xs text-green-600 text-center opacity-60">
                         {/* Drop subjects here */}
@@ -552,7 +532,8 @@ const LessonManagementSystem = () => {
                       setDraggedSubject(null);
                       setDragOverSlot(null);
                     }}
-                    className={`p-3 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-md transition-all ${isDragging ? 'opacity-30 scale-95' : 'hover:scale-105'}`}
+                    className={`p-3 bg-white border border-gray-200 rounded-lg cursor-grab hover:shadow-md transition-all ${isDragging ? 'opacity-50 scale-95' : 'hover:scale-105'
+                      }`}
                   >
                     <div className="flex items-center space-x-3 mb-2">
                       <div className={`w-4 h-4 rounded ${subject.color}`}></div>
@@ -746,64 +727,35 @@ const LessonManagementSystem = () => {
     <div className="min-h-screen bg-white flex">
       {/* Tutor Availability Tooltip */}
       {hoveredSlot && (
-        // <div
-        //   className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs"
-        //   style={{
-        //     left: tooltipPosition.x,
-        //     top: tooltipPosition.y,
-        //     transform: 'translateY(-50%)'
-        //   }}
-        // >
-        //   <div className="text-sm font-semibold text-gray-800 mb-2">
-        //     Available Tutors - {hoveredSlot.timeSlot}
-        //   </div>
-        //   <div className="space-y-2">
-        //     {hoveredSlot.availableTeachers.map(teacher => (
-        //       <div key={teacher.id} className="flex items-center space-x-2">
-        //         <div className={`w-6 h-6 rounded-full ${teacher.color} flex items-center justify-center text-white text-xs font-bold`}>
-        //           {teacher.name.charAt(0)}
-        //         </div>
-        //         <div className="flex-1">
-        //           <div className="text-sm font-medium text-gray-800">{teacher.name}</div>
-        //           <div className="text-xs text-gray-600">{teacher.subject}</div>
-        //         </div>
-        //         <div className="flex items-center text-xs text-yellow-600">
-        //           <Star className="w-3 h-3 mr-1 fill-current" />
-        //           {teacher.rating}
-        //         </div>
-        //       </div>
-        //     ))}
-        //   </div>
-        // </div>
         <div
-    className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs"
-    style={{
-      left: tooltipPosition.x,
-      top: tooltipPosition.y,
-      transform: 'translateY(-50%)'
-    }}
-  >
-    <div className="text-sm font-semibold text-gray-800 mb-3">
-      Available Tutors - {hoveredSlot.timeSlot}
-    </div>
-    <div className="space-y-3">
-      {hoveredSlot.availableTeachers.map(teacher => (
-        <div key={teacher.id} className="flex items-center space-x-3">
-          <div className={`w-8 h-8 rounded-full ${teacher.color} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-            {teacher.name.charAt(0)}
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs"
+          style={{
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
+            transform: 'translateY(-50%)'
+          }}
+        >
+          <div className="text-sm font-semibold text-gray-800 mb-2">
+            Available Tutors - {hoveredSlot.timeSlot}
           </div>
-          <div className="flex-1">
-            <div className="text-sm font-medium text-gray-800">{teacher.name}</div>
-            <div className="text-xs text-gray-600">{teacher.subject}</div>
-          </div>
-          <div className="flex items-center text-xs text-yellow-600">
-            <Star className="w-3 h-3 mr-1 fill-current" />
-            {teacher.rating}
+          <div className="space-y-2">
+            {hoveredSlot.availableTeachers.map(teacher => (
+              <div key={teacher.id} className="flex items-center space-x-2">
+                <div className={`w-6 h-6 rounded-full ${teacher.color} flex items-center justify-center text-white text-xs font-bold`}>
+                  {teacher.name.charAt(0)}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-800">{teacher.name}</div>
+                  <div className="text-xs text-gray-600">{teacher.subject}</div>
+                </div>
+                <div className="flex items-center text-xs text-yellow-600">
+                  <Star className="w-3 h-3 mr-1 fill-current" />
+                  {teacher.rating}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
-  </div>
       )}
 
       {/* Sidebar */}
@@ -815,7 +767,7 @@ const LessonManagementSystem = () => {
       <div className="flex-1 flex flex-col">
         {/* Header with Child Selection */}
         <div className="bg-white border-b border-gray-200 p-2">
-          {/* <div className='w-full flex flex-col items-center mt-1'>
+          <div className='w-full flex flex-col items-center mt-1'>
             <div className='flex items-center justify-center'>
               <img
                 src="logo.png"
@@ -833,7 +785,7 @@ const LessonManagementSystem = () => {
               <button className='absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full'>
               </button>
             </div>
-          </div> */}
+          </div>
           <div className="flex items-center justify-between mb-4 p-2">
 
             <div>
