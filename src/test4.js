@@ -1,25 +1,13 @@
 
-import React, { useState } from 'react';
-import { Calendar, Clock, User, BookOpen, ChevronLeft, ChevronRight, X, Check, Star, ChevronDown, Info, MoreHorizontal, Circle, Repeat } from 'lucide-react';
-import { children, hiredTeachers, initialSubjects, initialBookedLessons, teacherAvailability, learningTypes } from './data';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, User, BookOpen, ChevronLeft, ChevronRight, X, Check, AlertCircle, Users, Star, ChevronDown, Info, GraduationCap, UserCheck, Building, MoreHorizontal } from 'lucide-react';
 
 const LessonManagementSystem = () => {
-  // Constants
-  const TOTAL_TIME_SLOTS = 48;
-  const MINUTES_PER_SLOT = 30;
-  const DEFAULT_LESSON_DURATION = 30;
-  const RECURRING_WEEKS_COUNT = 10;
-
-  // Child and selection states
+  const [userType, setUserType] = useState('parent');
   const [selectedChild, setSelectedChild] = useState(0);
-  
-  // Calendar and date states
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(new Date());
-  const [sidebarCalendarMonth, setSidebarCalendarMonth] = useState(new Date());
-  const [calendarView, setCalendarView] = useState('week');
-  
-  // Learning type states
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [learningType, setLearningType] = useState('all');
   const [enabledLearningTypes, setEnabledLearningTypes] = useState({
     all: true,
@@ -27,61 +15,169 @@ const LessonManagementSystem = () => {
     silo: false,
     classroom: false
   });
-  
-  // Booking and modal states
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState({
-    duration: DEFAULT_LESSON_DURATION,
-    teacherId: null,
-    recurring: false
-  });
-  
-  // UI interaction states
-  const [showChildDropdown, setShowChildDropdown] = useState(false);
-  const [showTutorMenu, setShowTutorMenu] = useState(null);
-  const [tutorTab, setTutorTab] = useState('calendar');
-  const [hoveredSlot, setHoveredSlot] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  
-  // Lesson popup states
-  const [selectedLessonPopup, setSelectedLessonPopup] = useState(null);
-  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
-  const [rescheduleDetails, setRescheduleDetails] = useState({
-    day: '',
-    time: ''
-  });
-  
-  // Silo duration selection states
-  const [showSiloDurationModal, setShowSiloDurationModal] = useState(false);
-  const [siloDurationDetails, setSiloDurationDetails] = useState({
-    draggedSubject: null,
-    dayIndex: null,
-    timeSlot: null,
-    duration: 25
-  });
-  
-  // Drag and drop states
   const [draggedSubject, setDraggedSubject] = useState(null);
   const [dragOverSlot, setDragOverSlot] = useState(null);
-  
-  // Expansion states
+  const [showChildDropdown, setShowChildDropdown] = useState(false);
+  const [hoveredSlot, setHoveredSlot] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [bookingDetails, setBookingDetails] = useState({
+    duration: 30,
+    teacherId: null
+  });
+  const [showTutorMenu, setShowTutorMenu] = useState(null);
+  const [tutorTab, setTutorTab] = useState('calendar'); // 'calendar' or 'tutors'
+  const [sidebarCalendarMonth, setSidebarCalendarMonth] = useState(new Date());
+  const [calendarView, setCalendarView] = useState('week'); // 'day', 'week', 'month'
+  const [selectedDay, setSelectedDay] = useState(new Date());
   const [expandedSubjects, setExpandedSubjects] = useState({});
-  const [expandedSubSubjects, setExpandedSubSubjects] = useState({});
-  
-  // Data states
-  const [subjects, setSubjects] = useState(initialSubjects);
-  const [bookedLessons, setBookedLessons] = useState(initialBookedLessons);
-  
-  // Derived constants
-  const timeSlots = Array.from({ length: TOTAL_TIME_SLOTS }, (_, i) => {
+
+  // Mock data
+  const children = [
+    { id: 1, name: 'Emma', age: 8, curriculum: 'Primary', avatar: '👧' },
+    { id: 2, name: 'James', age: 12, curriculum: 'Lower Secondary', avatar: '👦' },
+    { id: 3, name: 'Sophie', age: 16, curriculum: 'Upper Secondary', avatar: '👩' }
+  ];
+
+  const hiredTeachers = [
+    { id: 1, name: 'Mrs. Johnson', subject: 'Mathematics', rating: 4.8, avatar: '👩‍🏫', color: 'bg-green-700', pricePerLesson: 45, lessonsToReschedule: 2, totalLessons: 12 },
+    { id: 2, name: 'Mr. Smith', subject: 'English', rating: 4.9, avatar: '👨‍🏫', color: 'bg-[#6f9685]', pricePerLesson: 50, lessonsToReschedule: 1, totalLessons: 8 },
+    { id: 3, name: 'Dr. Williams', subject: 'Science', rating: 4.7, avatar: '👨‍🔬', color: 'bg-green-700', pricePerLesson: 55, lessonsToReschedule: 0, totalLessons: 15 },
+    { id: 4, name: 'Ms. Davis', subject: 'History', rating: 4.6, avatar: '👩‍🏫', color: 'bg-green-800', pricePerLesson: 40, lessonsToReschedule: 3, totalLessons: 10 },
+    { id: 5, name: 'Prof. Brown', subject: 'Geography', rating: 4.8, avatar: '👨‍🏫', color: 'bg-[#A7C6B9]', pricePerLesson: 42, lessonsToReschedule: 1, totalLessons: 6 }
+  ];
+
+  const subjects = [
+    {
+      id: 1,
+      name: 'Mathematics',
+      color: 'bg-blue-500',
+      totalHours: 40,
+      completedHours: 15,
+      subSubjects: [
+        { id: 11, name: 'Algebra', totalHours: 15, completedHours: 8 },
+        { id: 12, name: 'Geometry', totalHours: 15, completedHours: 5 },
+        { id: 13, name: 'Statistics', totalHours: 10, completedHours: 2 }
+      ]
+    },
+    {
+      id: 2,
+      name: 'English',
+      color: 'bg-purple-500',
+      totalHours: 35,
+      completedHours: 22,
+      subSubjects: [
+        { id: 21, name: 'Literature', totalHours: 12, completedHours: 8 },
+        { id: 22, name: 'Grammar', totalHours: 12, completedHours: 9 },
+        { id: 23, name: 'Writing', totalHours: 11, completedHours: 5 }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Science',
+      color: 'bg-teal-500',
+      totalHours: 45,
+      completedHours: 18,
+      subSubjects: [
+        { id: 31, name: 'Physics', totalHours: 15, completedHours: 7 },
+        { id: 32, name: 'Chemistry', totalHours: 15, completedHours: 6 },
+        { id: 33, name: 'Biology', totalHours: 15, completedHours: 5 }
+      ]
+    },
+    {
+      id: 4,
+      name: 'History',
+      color: 'bg-amber-500',
+      totalHours: 30,
+      completedHours: 12,
+      subSubjects: [
+        { id: 41, name: 'World History', totalHours: 18, completedHours: 8 },
+        { id: 42, name: 'Local History', totalHours: 12, completedHours: 4 }
+      ]
+    },
+    {
+      id: 5,
+      name: 'Geography',
+      color: 'bg-green-500',
+      totalHours: 25,
+      completedHours: 8,
+      subSubjects: [
+        { id: 51, name: 'Physical Geography', totalHours: 13, completedHours: 5 },
+        { id: 52, name: 'Human Geography', totalHours: 12, completedHours: 3 }
+      ]
+    }
+  ];
+
+  const timeSlots = Array.from({ length: 48 }, (_, i) => {
     const hour = Math.floor(i / 2);
-    const minute = (i % 2) * MINUTES_PER_SLOT;
+    const minute = (i % 2) * 30;
     return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   });
-  
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  // Enhanced booking data structure
+  const [bookedLessons, setBookedLessons] = useState([
+    { id: 1, teacherId: 1, day: 1, time: '14:00', duration: 60, childId: 1, subject: 'Math', type: 'tutor', subjectId: 1 },
+    { id: 2, teacherId: 2, day: 3, time: '16:00', duration: 30, childId: 2, subject: 'English', type: 'tutor', subjectId: 2 },
+    { id: 3, teacherId: 3, day: 5, time: '10:00', duration: 90, childId: 1, subject: 'Physics', type: 'tutor', subjectId: 3 },
+    { id: 4, childId: 1, day: 2, time: '09:00', duration: 60, subject: 'Mathematics', type: 'silo', subjectId: 1 },
+    { id: 5, childId: 2, day: 4, time: '11:00', duration: 30, subject: 'History', type: 'silo', subjectId: 4 },
+    { id: 6, childId: 3, day: 1, time: '08:00', duration: 120, subject: 'Classroom Learning', type: 'classroom' },
+    { id: 7, childId: 1, day: 6, time: '13:00', duration: 90, subject: 'Classroom Learning', type: 'classroom' },
+  ]);
+
+  const teacherAvailability = {
+    1: {
+      1: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'],
+      2: ['09:00', '10:00', '13:00', '14:00', '15:00'],
+      3: ['10:00', '11:00', '14:00', '15:00', '16:00', '17:00'],
+      4: ['09:00', '13:00', '14:00', '15:00', '16:00'],
+      5: ['09:00', '10:00', '11:00', '15:00', '16:00'],
+      6: ['10:00', '11:00', '14:00', '15:00'],
+      0: ['14:00', '15:00', '16:00']
+    },
+    2: {
+      1: ['08:00', '09:00', '13:00', '15:00', '17:00'],
+      2: ['09:00', '10:00', '14:00', '16:00', '17:00'],
+      3: ['08:00', '09:00', '15:00', '16:00', '17:00'],
+      4: ['09:00', '13:00', '14:00', '16:00', '17:00'],
+      5: ['08:00', '09:00', '13:00', '15:00'],
+      6: ['09:00', '10:00', '15:00', '16:00'],
+      0: []
+    },
+    3: {
+      1: ['10:00', '11:00', '15:00', '16:00', '18:00'],
+      2: ['09:00', '11:00', '14:00', '17:00', '18:00'],
+      3: ['10:00', '11:00', '16:00', '17:00'],
+      4: ['09:00', '10:00', '15:00', '17:00', '18:00'],
+      5: ['10:00', '11:00', '14:00', '15:00', '16:00'],
+      6: ['11:00', '15:00', '16:00', '17:00'],
+      0: ['15:00', '16:00']
+    },
+    4: {
+      1: ['08:00', '09:00', '10:00', '14:00', '15:00'],
+      2: ['09:00', '10:00', '11:00', '16:00', '17:00'],
+      3: ['08:00', '09:00', '15:00', '16:00', '17:00'],
+      4: ['09:00', '10:00', '14:00', '16:00', '17:00'],
+      5: ['08:00', '09:00', '10:00', '15:00'],
+      6: ['09:00', '10:00', '15:00', '16:00'],
+      0: ['15:00', '16:00']
+    },
+    5: {
+      1: ['10:00', '11:00', '12:00', '16:00', '17:00'],
+      2: ['09:00', '10:00', '14:00', '17:00', '18:00'],
+      3: ['10:00', '11:00', '15:00', '17:00'],
+      4: ['09:00', '10:00', '14:00', '17:00', '18:00'],
+      5: ['10:00', '11:00', '12:00', '15:00', '16:00'],
+      6: ['11:00', '14:00', '16:00', '17:00'],
+      0: ['14:00', '15:00']
+    }
+  };
+
+  const learningTypes = [
+    { id: 'all', name: 'All', icon: GraduationCap },
+    { id: 'tutor', name: 'Tutor Learning', icon: UserCheck },
+    { id: 'silo', name: 'Silo Learning', icon: BookOpen },
+    { id: 'classroom', name: 'Classroom Learning', icon: Building }
+  ];
 
   const getWeekDates = (date) => {
     const week = [];
@@ -98,7 +194,9 @@ const LessonManagementSystem = () => {
     return week;
   };
 
-  // Utility functions
+  const weekDates = getWeekDates(currentWeek);
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   const getAvailableTeachers = (dayIndex, timeSlot) => {
     return hiredTeachers.filter(teacher => {
       const availability = teacherAvailability[teacher.id]?.[dayIndex] || [];
@@ -113,107 +211,46 @@ const LessonManagementSystem = () => {
 
   const getFilteredLessons = () => {
     const currentChildLessons = bookedLessons.filter(lesson =>
-      lesson.childId === children[selectedChild].id
+      userType === 'parent' ? lesson.childId === children[selectedChild].id : true
     );
 
-    if (learningType !== 'all') {
-      return currentChildLessons.filter(lesson => lesson.type === learningType);
+    if (learningType === 'all') {
+      return currentChildLessons;
     }
-
-    return currentChildLessons;
+    return currentChildLessons.filter(lesson => lesson.type === learningType);
   };
 
-  const getSlotReservations = (dayIndex, timeSlot) => {
-    return bookedLessons.filter(lesson =>
-      lesson.childId === children[selectedChild].id &&
-      lesson.day === dayIndex &&
-      lesson.time === timeSlot
-    );
-  };
-
-  const getTutorSlotBackgroundColor = (tutorCount) => {
-    if (tutorCount === 0) return 'bg-gray-50';
-    if (tutorCount === 1) return 'bg-[#e1f0e8] hover:bg-[#d4e8dc] border-l-2 border-[#b3d6c4]';
-    if (tutorCount === 2) return 'bg-[#d4e8dc] hover:bg-[#c4dfd0] border-l-2 border-[#8bc7a5]';
-    if (tutorCount === 3) return 'bg-[#c4dfd0] hover:bg-[#b3d6c4] border-l-2 border-[#6bb888]';
-    if (tutorCount === 4) return 'bg-[#b3d6c4] hover:bg-[#9cccb2] border-l-2 border-[#05513C]';
-    return 'bg-[#9cccb2] hover:bg-[#8bc7a5] border-l-2 border-[#033d2b]';
-  };
-
-  // Computed values
-  const weekDates = getWeekDates(currentWeek);
-
-  // Event handlers
   const handleSlotClick = (dayIndex, timeSlot) => {
-    if (learningType === 'tutor') {
-      // Check if slot is already reserved by any lesson
-      const allSlotReservations = getSlotReservations(dayIndex, timeSlot);
-      const isReserved = allSlotReservations.length > 0;
-      
-      // Don't allow booking on reserved slots
-      if (isReserved) {
-        return;
-      }
-      
+    // Only allow booking if user is parent
+    if (userType === 'parent' && learningType === 'tutor') {
       const availableTeachers = getAvailableTeachers(dayIndex, timeSlot);
       if (availableTeachers.length > 0) {
         setSelectedSlot({ dayIndex, timeSlot, availableTeachers });
         setBookingDetails({
-          duration: DEFAULT_LESSON_DURATION,
-          teacherId: availableTeachers.length === 1 ? availableTeachers[0].id : null,
-          recurring: false
+          duration: 30,
+          teacherId: availableTeachers.length === 1 ? availableTeachers[0].id : null
         });
         setShowBookingModal(true);
       }
     }
   };
 
-  const markTopicAsCompleted = (topicId, subjectId, subSubjectId) => {
-    setSubjects(prevSubjects => 
-      prevSubjects.map(subject => {
-        if (subject.id === subjectId) {
-          return {
-            ...subject,
-            subSubjects: subject.subSubjects.map(subSubject => {
-              if (subSubject.id === subSubjectId) {
-                return {
-                  ...subSubject,
-                  topics: subSubject.topics.map(topic => 
-                    topic.id === topicId ? { ...topic, completed: true } : topic
-                  )
-                };
-              }
-              return subSubject;
-            })
-          };
-        }
-        return subject;
-      })
-    );
-  };
-
   const handleDrop = (e, dayIndex, timeSlot) => {
     e.preventDefault();
     setDragOverSlot(null);
-    if (draggedSubject && learningType === 'silo') {
-      // Check if slot is already reserved by any lesson
-      const allSlotReservations = getSlotReservations(dayIndex, timeSlot);
-      const isReserved = allSlotReservations.length > 0;
-      
-      // Don't allow booking on reserved slots
-      if (isReserved) {
-        setDraggedSubject(null);
-        return;
-      }
-      
-      // Show duration selection modal
-      setSiloDurationDetails({
-        draggedSubject: draggedSubject,
-        dayIndex: dayIndex,
-        timeSlot: timeSlot,
-        duration: 25
-      });
-      setShowSiloDurationModal(true);
+    // Only allow drag and drop if user is parent
+    if (userType === 'parent' && draggedSubject && learningType === 'silo') {
+      const newLesson = {
+        id: Date.now(),
+        childId: children[selectedChild].id,
+        day: dayIndex,
+        time: timeSlot,
+        duration: 30,
+        subject: draggedSubject.parentSubject ? `${draggedSubject.parentSubject} - ${draggedSubject.name}` : draggedSubject.name,
+        type: 'silo',
+        subjectId: draggedSubject.id
+      };
+      setBookedLessons(prev => [...prev, newLesson]);
       setDraggedSubject(null);
     }
   };
@@ -221,14 +258,7 @@ const LessonManagementSystem = () => {
   const handleDragOver = (e, dayIndex, timeSlot) => {
     e.preventDefault();
     if (draggedSubject && learningType === 'silo') {
-      // Check if slot is already reserved by any lesson
-      const allSlotReservations = getSlotReservations(dayIndex, timeSlot);
-      const isReserved = allSlotReservations.length > 0;
-      
-      // Only show drag over effect if slot is not reserved
-      if (!isReserved) {
-        setDragOverSlot(`${dayIndex}-${timeSlot}`);
-      }
+      setDragOverSlot(`${dayIndex}-${timeSlot}`);
     }
   };
 
@@ -244,7 +274,8 @@ const LessonManagementSystem = () => {
   };
 
   const handleBookLesson = () => {
-    const baseLesson = {
+    const newLesson = {
+      id: Date.now(),
       childId: children[selectedChild].id,
       teacherId: bookingDetails.teacherId,
       day: selectedSlot.dayIndex,
@@ -252,142 +283,45 @@ const LessonManagementSystem = () => {
       duration: bookingDetails.duration,
       subject: hiredTeachers.find(t => t.id === bookingDetails.teacherId)?.subject,
       type: 'tutor',
-      subjectId: hiredTeachers.find(t => t.id === bookingDetails.teacherId)?.id,
-      recurring: bookingDetails.recurring
+      subjectId: hiredTeachers.find(t => t.id === bookingDetails.teacherId)?.id
     };
 
-    if (bookingDetails.recurring) {
-      // Create recurring lessons for multiple weeks (e.g., 10 weeks)
-      const recurringLessons = [];
-      for (let i = 0; i < RECURRING_WEEKS_COUNT; i++) {
-        recurringLessons.push({
-          ...baseLesson,
-          id: Date.now() + i,
-          weekOffset: i // Track which week this lesson belongs to
-        });
-      }
-      setBookedLessons(prev => [...prev, ...recurringLessons]);
-    } else {
-      // Create single lesson
-      const newLesson = {
-        ...baseLesson,
-        id: Date.now()
-      };
-      setBookedLessons(prev => [...prev, newLesson]);
-    }
-
+    setBookedLessons(prev => [...prev, newLesson]);
     setShowBookingModal(false);
     setSelectedSlot(null);
-    setBookingDetails(prev => ({ ...prev, recurring: false })); // Reset recurring checkbox
   };
 
-  const handleCancelLesson = (lesson) => {
-    if (lesson.type === 'tutor') {
-      // For tutor learning, just remove the lesson
-      setBookedLessons(prev => prev.filter(l => l.id !== lesson.id));
-    } else if (lesson.type === 'silo') {
-      // For silo learning, remove lesson and uncheck the topic
-      setBookedLessons(prev => prev.filter(l => l.id !== lesson.id));
-      
-      // Find and uncheck the topic
-      if (lesson.topicId && lesson.subjectId && lesson.subSubjectId) {
-        setSubjects(prevSubjects => 
-          prevSubjects.map(subject => {
-            if (subject.id === lesson.subjectId) {
-              return {
-                ...subject,
-                subSubjects: subject.subSubjects.map(subSubject => {
-                  if (subSubject.id === lesson.subSubjectId) {
-                    return {
-                      ...subSubject,
-                      topics: subSubject.topics.map(topic => 
-                        topic.id === lesson.topicId ? { ...topic, completed: false } : topic
-                      )
-                    };
-                  }
-                  return subSubject;
-                })
-              };
-            }
-            return subject;
-          })
-        );
-      }
-    }
-    setSelectedLessonPopup(null);
+  // iOS-style Switch Component
+  const SwitchToggle = ({ enabled, onChange, label, icon: IconComponent, isActive }) => {
+    return (
+      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${
+            isActive ? 'bg-green-700 text-white' : 'bg-gray-200 text-gray-600'
+          } transition-colors`}>
+            <IconComponent className="w-4 h-4" />
+          </div>
+          <span className={`font-medium ${
+            isActive ? 'text-gray-900' : 'text-gray-700'
+          }`}>{label}</span>
+        </div>
+        <button
+          onClick={onChange}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+            enabled
+              ? 'bg-green-600'
+              : 'bg-gray-300'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+    );
   };
-
-  const handleRescheduleLesson = (lesson) => {
-    setRescheduleDetails({
-      day: '',
-      time: '',
-      lessonToReschedule: lesson
-    });
-    setShowRescheduleModal(true);
-    setSelectedLessonPopup(null);
-  };
-
-  const handleConfirmReschedule = () => {
-    const { lessonToReschedule } = rescheduleDetails;
-    const dayIndex = parseInt(rescheduleDetails.day);
-    
-    if (lessonToReschedule && rescheduleDetails.day !== '' && rescheduleDetails.time) {
-      setBookedLessons(prev => prev.map(lesson => 
-        lesson.id === lessonToReschedule.id 
-          ? { ...lesson, day: dayIndex, time: rescheduleDetails.time }
-          : lesson
-      ));
-      
-      setShowRescheduleModal(false);
-      setRescheduleDetails({ day: '', time: '' });
-    }
-  };
-
-  const handleLessonClick = (lesson, event) => {
-    event.stopPropagation();
-    const rect = event.currentTarget.getBoundingClientRect();
-    setSelectedLessonPopup({
-      lesson,
-      position: {
-        x: rect.right + 10,
-        y: rect.top
-      }
-    });
-  };
-
-  const handleConfirmSiloDuration = () => {
-    const { draggedSubject, dayIndex, timeSlot, duration } = siloDurationDetails;
-    
-    if (draggedSubject && dayIndex !== null && timeSlot) {
-      const newLesson = {
-        id: Date.now(),
-        childId: children[selectedChild].id,
-        day: dayIndex,
-        time: timeSlot,
-        duration: duration,
-        subject: draggedSubject.parentSubject ? `${draggedSubject.parentSubject} - ${draggedSubject.name}` : draggedSubject.name,
-        type: 'silo',
-        subjectId: draggedSubject.subjectId,
-        subSubjectId: draggedSubject.subSubjectId,
-        topicId: draggedSubject.topicId
-      };
-      setBookedLessons(prev => [...prev, newLesson]);
-      
-      // Mark topic as completed when lesson is created
-      if (draggedSubject.topicId && draggedSubject.subjectId && draggedSubject.subSubjectId) {
-        markTopicAsCompleted(draggedSubject.topicId, draggedSubject.subjectId, draggedSubject.subSubjectId);
-      }
-      
-      setShowSiloDurationModal(false);
-      setSiloDurationDetails({
-        draggedSubject: null,
-        dayIndex: null,
-        timeSlot: null,
-        duration: 25
-      });
-    }
-  };
-
 
   const handleLearningTypeToggle = (typeId) => {
     // Set only the selected type as enabled, all others disabled
@@ -405,7 +339,32 @@ const LessonManagementSystem = () => {
     setLearningType(typeId);
   };
 
-  // Render functions
+  const isSlotOccupied = (dayIndex, timeSlot, currentType) => {
+    return bookedLessons.some(lesson =>
+      lesson.childId === children[selectedChild].id &&
+      lesson.day === dayIndex &&
+      lesson.time === timeSlot &&
+      (currentType === 'all' || lesson.type !== currentType)
+    );
+  };
+
+  const getSlotReservations = (dayIndex, timeSlot) => {
+    return bookedLessons.filter(lesson =>
+      lesson.childId === children[selectedChild].id &&
+      lesson.day === dayIndex &&
+      lesson.time === timeSlot
+    );
+  };
+
+  const getTutorSlotBackgroundColor = (tutorCount) => {
+    if (tutorCount === 0) return 'bg-gray-50';
+    if (tutorCount === 1) return 'bg-[#e1f0e8] hover:bg-[#d4e8dc] border-l-2 border-[#b3d6c4]';
+    if (tutorCount === 2) return 'bg-[#d4e8dc] hover:bg-[#c4dfd0] border-l-2 border-[#8bc7a5]';
+    if (tutorCount === 3) return 'bg-[#c4dfd0] hover:bg-[#b3d6c4] border-l-2 border-[#6bb888]';
+    if (tutorCount === 4) return 'bg-[#b3d6c4] hover:bg-[#9cccb2] border-l-2 border-[#05513C]';
+    return 'bg-[#9cccb2] hover:bg-[#8bc7a5] border-l-2 border-[#033d2b]'; // 5 or more tutors
+  };
+
   const renderDayView = () => {
     const filteredLessons = getFilteredLessons();
     const selectedDayIndex = selectedDay.getDay() === 0 ? 6 : selectedDay.getDay() - 1; // Convert Sunday=0 to Monday=0 format
@@ -413,7 +372,7 @@ const LessonManagementSystem = () => {
     return (
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {/* Day Header */}
-        <div className="grid border-b border-gray-200" style={{gridTemplateColumns: '120px 1fr'}}>
+        <div className="grid grid-cols-2 border-b border-gray-200">
           <div className="p-4 bg-gray-50 font-semibold text-gray-600 h-16 flex items-center justify-center">Time</div>
           <div className="p-4 bg-gray-50 text-center h-16 flex flex-col items-center justify-center">
             <div className="font-semibold text-gray-800">{selectedDay.toLocaleDateString('en-GB', { weekday: 'long' })}</div>
@@ -424,7 +383,7 @@ const LessonManagementSystem = () => {
         {/* Time Slots - Full day from 00:00 to 23:30 */}
         <div className="flex-1" onDragLeave={handleDragLeave}>
           {timeSlots.map((timeSlot, timeIndex) => (
-            <div key={timeSlot} className="grid border-b border-gray-100 h-8" style={{gridTemplateColumns: '120px 1fr'}}>
+            <div key={timeSlot} className="grid grid-cols-2 border-b border-gray-100 h-8">
               {timeIndex % 2 === 0 && (
                 <div className="p-2 bg-gray-50 text-xs font-medium text-gray-600 border-r border-gray-200 flex items-center justify-center row-span-2">
                   {timeSlot.substring(0, 5)}
@@ -468,7 +427,7 @@ const LessonManagementSystem = () => {
                                 : 'bg-gray-50'
                               : 'bg-gray-50'
                       }`}
-                    onClick={() => !currentSlotLessons.length && !isReservedByOtherType && handleSlotClick(selectedDayIndex, timeSlot)}
+                    onClick={() => userType === 'parent' && !currentSlotLessons.length && !isReservedByOtherType && handleSlotClick(selectedDayIndex, timeSlot)}
                     onDrop={(e) => handleDrop(e, selectedDayIndex, timeSlot)}
                     onDragOver={(e) => handleDragOver(e, selectedDayIndex, timeSlot)}
                     onMouseEnter={(e) => {
@@ -486,22 +445,12 @@ const LessonManagementSystem = () => {
                     }}
                   >
                     {currentSlotLessons.length > 0 ? (
-                      <div 
-                        className="text-center w-full cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={(e) => handleLessonClick(currentSlotLessons[0], e)}
-                      >
-                        <div className="font-semibold truncate text-xs flex items-center justify-center space-x-1">
-                          <span>
-                            {currentSlotLessons[0].subject.includes(' - ') 
-                              ? currentSlotLessons[0].subject.split(' - ')[1].substring(0, 6)
-                              : currentSlotLessons[0].subject.substring(0, 6)
-                            }
-                          </span>
-                          {currentSlotLessons[0].recurring ? (
-                            <Repeat className="w-2 h-2" />
-                          ) : (
-                            <Circle className="w-2 h-2 fill-current" />
-                          )}
+                      <div className="text-center w-full">
+                        <div className="font-semibold truncate text-xs">
+                          {currentSlotLessons[0].subject.includes(' - ') 
+                            ? currentSlotLessons[0].subject.split(' - ')[1].substring(0, 8)
+                            : currentSlotLessons[0].subject.substring(0, 8)
+                          }
                         </div>
                         {currentSlotLessons[0].teacherId && (
                           <div className="text-gray-600 truncate text-xs">
@@ -580,7 +529,7 @@ const LessonManagementSystem = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 flex-1">
+        <div className="grid grid-cols-7">
           {(() => {
             const totalCells = startingDayOfWeek + daysInMonth;
             const totalWeeks = Math.ceil(totalCells / 7);
@@ -626,25 +575,17 @@ const LessonManagementSystem = () => {
                         {dayLessons.slice(0, 3).map((lesson, idx) => (
                           <div
                             key={idx}
-                            className={`text-xs p-1 rounded truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center space-x-1 ${
+                            className={`text-xs p-1 rounded truncate ${
                               lesson.type === 'tutor'
                                 ? 'bg-blue-100 text-blue-800'
                                 : lesson.type === 'silo'
                                   ? 'bg-green-100 text-green-800'
                                   : 'bg-purple-100 text-purple-800'
                             }`}
-                            onClick={(e) => handleLessonClick(lesson, e)}
                           >
-                            <span className="flex-1 truncate">
-                              {lesson.time} {lesson.subject.includes(' - ') 
-                                ? lesson.subject.split(' - ')[1]
-                                : lesson.subject}
-                            </span>
-                            {lesson.recurring ? (
-                              <Repeat className="w-2 h-2 flex-shrink-0" />
-                            ) : (
-                              <Circle className="w-2 h-2 fill-current flex-shrink-0" />
-                            )}
+                            {lesson.time} {lesson.subject.includes(' - ') 
+                              ? lesson.subject.split(' - ')[1]
+                              : lesson.subject}
                           </div>
                         ))}
                         {dayLessons.length > 3 && (
@@ -683,7 +624,7 @@ const LessonManagementSystem = () => {
 
         {/* Time Slots */}
         <div className="flex-1" onDragLeave={handleDragLeave}>
-          {timeSlots.map((timeSlot, timeIndex) => (
+          {timeSlots.slice(16, 40).map((timeSlot, timeIndex) => (
             <div key={timeSlot} className="grid grid-cols-8 border-b border-gray-100 h-8">
               {timeIndex % 2 === 0 && (
                 <div className="p-2 bg-gray-50 text-xs font-medium text-gray-600 border-r border-gray-200 flex items-center justify-center row-span-2">
@@ -693,7 +634,7 @@ const LessonManagementSystem = () => {
               {timeIndex % 2 !== 0 && (
                 <div className="border-r border-gray-200"></div>
               )}
-              {weekDates.map((_, dayIndex) => {
+              {weekDates.map((date, dayIndex) => {
                 const availableTeachers = getAvailableTeachers(dayIndex, timeSlot);
                 const currentSlotLessons = filteredLessons.filter(lesson =>
                   lesson.day === dayIndex && lesson.time === timeSlot
@@ -727,7 +668,7 @@ const LessonManagementSystem = () => {
                                 : 'bg-gray-50'
                               : 'bg-gray-50'
                       }`}
-                    onClick={() => !currentSlotLessons.length && !isReservedByOtherType && handleSlotClick(dayIndex, timeSlot)}
+                    onClick={() => userType === 'parent' && !currentSlotLessons.length && !isReservedByOtherType && handleSlotClick(dayIndex, timeSlot)}
                     onDrop={(e) => handleDrop(e, dayIndex, timeSlot)}
                     onDragOver={(e) => handleDragOver(e, dayIndex, timeSlot)}
                     onMouseEnter={(e) => {
@@ -745,22 +686,12 @@ const LessonManagementSystem = () => {
                     }}
                   >
                     {currentSlotLessons.length > 0 ? (
-                      <div 
-                        className="text-center w-full cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={(e) => handleLessonClick(currentSlotLessons[0], e)}
-                      >
-                        <div className="font-semibold truncate text-xs flex items-center justify-center space-x-1">
-                          <span>
-                            {currentSlotLessons[0].subject.includes(' - ') 
-                              ? currentSlotLessons[0].subject.split(' - ')[1].substring(0, 6)
-                              : currentSlotLessons[0].subject.substring(0, 6)
-                            }
-                          </span>
-                          {currentSlotLessons[0].recurring ? (
-                            <Repeat className="w-2 h-2" />
-                          ) : (
-                            <Circle className="w-2 h-2 fill-current" />
-                          )}
+                      <div className="text-center w-full">
+                        <div className="font-semibold truncate text-xs">
+                          {currentSlotLessons[0].subject.includes(' - ') 
+                            ? currentSlotLessons[0].subject.split(' - ')[1].substring(0, 8)
+                            : currentSlotLessons[0].subject.substring(0, 8)
+                          }
                         </div>
                         {currentSlotLessons[0].teacherId && (
                           <div className="text-gray-600 truncate text-xs">
@@ -816,6 +747,10 @@ const LessonManagementSystem = () => {
       <div className="p-4">
         <div className="grid gap-3">
           {hiredTeachers.map(teacher => {
+            const teacherLessons = bookedLessons.filter(lesson => 
+              lesson.teacherId === teacher.id && 
+              lesson.childId === children[selectedChild].id
+            );
             
             return (
               <div key={teacher.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -910,18 +845,6 @@ const LessonManagementSystem = () => {
             );
           })}
         </div>
-        
-        {/* Marketplace Navigation */}
-        <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-          <a
-            href="https://tutormarketplace.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-700 hover:text-green-800 underline text-sm cursor-pointer"
-          >
-            Need extra support in a new subject? Find the right match in our tutor marketplace
-          </a>
-        </div>
       </div>
     );
   };
@@ -929,13 +852,13 @@ const LessonManagementSystem = () => {
   // Helper function to get days with lessons for a specific month
   const getDaysWithLessons = (month, year) => {
     const daysWithLessons = new Set();
-    const currentChildId = children[selectedChild].id;
+    const currentChildId = userType === 'parent' ? children[selectedChild].id : null;
     
     // Only highlight lesson days for the current week being viewed
     const weekDates = getWeekDates(currentWeek);
     
     bookedLessons.forEach(lesson => {
-      if (lesson.childId !== currentChildId) return;
+      if (userType === 'parent' && lesson.childId !== currentChildId) return;
       
       // Get the actual date for this lesson in the current week
       const lessonDate = weekDates[lesson.day];
@@ -1096,20 +1019,83 @@ const LessonManagementSystem = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Lesson Management</h1>
           <p className="text-gray-600 text-sm">
-            {`Managing ${learningTypes.find(t => t.id === learningType)?.name.toLowerCase()} for ${children[selectedChild].name}`}
+            {userType === 'parent'
+              ? `Managing ${learningTypes.find(t => t.id === learningType)?.name.toLowerCase()} for ${children[selectedChild].name}`
+              : `Your ${learningTypes.find(t => t.id === learningType)?.name.toLowerCase()} schedule`
+            }
           </p>
         </div>
 
-        
+        {/* Logo */}
+        {/* <div className='flex flex-col'>
+          <div className='flex items-center justify-center w-full'>
+          <img
+                src="logo.png"
+                alt="RightSteps"
+                className="h-24 w-24 bg-white p-1"
+              />
+              </div>
+        </div> */}
 
         {/* Full Monthly Calendar */}
         {renderSidebarCalendar()}
 
-        {/* Color Legend for All View */}
-        {learningType === 'all' && (
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Legend</h3>
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        {/* Weekly Summary */}
+        <div className='flex flex-col'>
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">This Week</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+              <span className="text-sm text-green-700">Lessons Booked</span>
+              <span className="font-semibold text-green-800">
+                {getFilteredLessons().length}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+              <span className="text-sm text-blue-700">Available Slots</span>
+              <span className="font-semibold text-blue-800">156</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+              <span className="text-sm text-purple-700">Total Hours</span>
+              <span className="font-semibold text-purple-800">
+                {getFilteredLessons().reduce((acc, lesson) => acc + (lesson.duration / 60), 0).toFixed(1)}h
+              </span>
+            </div>
+          </div>
+        </div>
+
+
+        {/* Learning Type Switches */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Learning Types</h3>
+          <div className="space-y-2">
+            {learningTypes.map(type => {
+              const IconComponent = type.icon;
+              return (
+                <SwitchToggle
+                  key={type.id}
+                  enabled={enabledLearningTypes[type.id]}
+                  onChange={() => handleLearningTypeToggle(type.id)}
+                  label={type.name}
+                  icon={IconComponent}
+                  isActive={learningType === type.id}
+                />
+              );
+            })}
+          </div>
+          
+          {/* Active Type Indicator */}
+          {/* <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+              <span className="text-sm text-green-700 font-medium">
+                Currently viewing: {learningTypes.find(t => t.id === learningType)?.name}
+              </span>
+            </div>
+          </div> */}
+
+          {/* Color Legend for All View */}
+          {learningType === 'all' && (
+            <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
               <div className="space-y-2">
                 <div className="flex items-center space-x-3">
                   <div className="w-4 h-4 bg-blue-100 border-l-2 border-blue-500 rounded"></div>
@@ -1125,13 +1111,12 @@ const LessonManagementSystem = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Silo Learning Hint - Parent Only */}
-        {/* {learningType === 'silo' && (
-          <div>
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+
+          {/* Silo Learning Hint - Parent Only */}
+          {learningType === 'silo' && userType === 'parent' && (
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-start space-x-2">
                 <Info className="w-4 h-4 text-green-600 mt-0.5" />
                 <div className="text-sm text-green-700">
@@ -1140,9 +1125,86 @@ const LessonManagementSystem = () => {
                 </div>
               </div>
             </div>
-          </div>
-        )} */}
+          )}
 
+          {/* Subject Cards for Silo Learning - Child View (Read Only) */}
+          {learningType === 'silo' && userType === 'child' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Your Subjects</h3>
+              <div className="space-y-3">
+                {subjects.map(subject => {
+                  const progress = (subject.completedHours / subject.totalHours) * 100;
+                  const isExpanded = expandedSubjects[subject.id];
+                  
+                  return (
+                    <div
+                      key={subject.id}
+                      className="bg-white border border-gray-200 rounded-lg transition-all"
+                    >
+                      {/* Main Subject Header */}
+                      <div className="p-3">
+                        <div 
+                          className="flex items-center space-x-3 mb-2 cursor-pointer"
+                          onClick={() => setExpandedSubjects(prev => ({ ...prev, [subject.id]: !prev[subject.id] }))}
+                        >
+                          <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                          <div className={`w-4 h-4 rounded ${subject.color}`}></div>
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-800 text-sm">{subject.name}</div>
+                            <div className="text-xs text-gray-600">
+                              {subject.completedHours}h / {subject.totalHours}h completed
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${subject.color}`}
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-600 mt-1">{Math.round(progress)}% complete</div>
+                      </div>
+
+                      {/* Sub-subjects */}
+                      {isExpanded && (
+                        <div className="border-t border-gray-100 p-3 space-y-2">
+                          {subject.subSubjects.map(subSubject => {
+                            const subProgress = (subSubject.completedHours / subSubject.totalHours) * 100;
+                            
+                            return (
+                              <div
+                                key={subSubject.id}
+                                className="p-2 bg-gray-50 rounded-md border border-gray-100"
+                              >
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <div className={`w-3 h-3 rounded ${subject.color}`}></div>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-700 text-sm">{subSubject.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {subSubject.completedHours}h / {subSubject.totalHours}h completed
+                                    </div>
+                                    <div className="text-xs text-gray-400 italic mt-1">View only</div>
+                                  </div>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1">
+                                  <div
+                                    className={`h-1 rounded-full ${subject.color}`}
+                                    style={{ width: `${subProgress}%` }}
+                                  ></div>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">{Math.round(subProgress)}% complete</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Subject Cards for Silo Learning */}
         {learningType === 'silo' && (
@@ -1152,6 +1214,7 @@ const LessonManagementSystem = () => {
               {subjects.map(subject => {
                 const progress = (subject.completedHours / subject.totalHours) * 100;
                 const isExpanded = expandedSubjects[subject.id];
+                const canDrag = userType === 'parent';
                 
                 return (
                   <div
@@ -1187,90 +1250,42 @@ const LessonManagementSystem = () => {
                       <div className="border-t border-gray-100 p-3 space-y-2">
                         {subject.subSubjects.map(subSubject => {
                           const subProgress = (subSubject.completedHours / subSubject.totalHours) * 100;
-                          const isSubSubjectExpanded = expandedSubSubjects[subSubject.id];
+                          const isDragging = draggedSubject?.id === subSubject.id;
                           
                           return (
-                            <div key={subSubject.id} className="bg-gray-50 rounded-md border border-gray-100">
-                              {/* Sub-subject header */}
-                              <div className="p-2">
-                                <div 
-                                  className="flex items-center space-x-2 mb-1 cursor-pointer"
-                                  onClick={() => setExpandedSubSubjects(prev => ({ ...prev, [subSubject.id]: !prev[subSubject.id] }))}
-                                >
-                                  <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isSubSubjectExpanded ? 'rotate-180' : ''}`} />
-                                  <div className={`w-3 h-3 rounded ${subject.color}`}></div>
-                                  <div className="flex-1">
-                                    <div className="font-medium text-gray-700 text-sm">{subSubject.name}</div>
-                                    <div className="text-xs text-gray-500">
-                                      {subSubject.completedHours}h / {subSubject.totalHours}h completed
-                                    </div>
+                            <div
+                              key={subSubject.id}
+                              draggable={canDrag}
+                              onDragStart={() => canDrag && setDraggedSubject({ ...subSubject, parentSubject: subject.name, color: subject.color })}
+                              onDragEnd={() => {
+                                setDraggedSubject(null);
+                                setDragOverSlot(null);
+                              }}
+                              className={`p-2 bg-gray-50 rounded-md border border-gray-100 transition-all ${
+                                canDrag 
+                                  ? `cursor-grab hover:shadow-sm ${isDragging ? 'opacity-30 scale-95' : 'hover:scale-105 hover:bg-gray-100'}`
+                                  : 'cursor-default'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2 mb-1">
+                                <div className={`w-3 h-3 rounded ${subject.color}`}></div>
+                                <div className="flex-1">
+                                  <div className="font-medium text-gray-700 text-sm">{subSubject.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {subSubject.completedHours}h / {subSubject.totalHours}h completed
                                   </div>
+                                  {!canDrag && (
+                                    <div className="text-xs text-gray-400 italic mt-1">View only</div>
+                                  )}
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-1">
-                                  <div
-                                    className={`h-1 rounded-full ${subject.color}`}
-                                    style={{ width: `${subProgress}%` }}
-                                  ></div>
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">{Math.round(subProgress)}% complete</div>
                               </div>
-
-                              {/* Topics */}
-                              {isSubSubjectExpanded && (
-                                <div className="border-t border-gray-200 p-2 space-y-1">
-                                  {subSubject.topics.map(topic => {
-                                    const isDragging = draggedSubject?.topicId === topic.id;
-                                    
-                                    return (
-                                      <div
-                                        key={topic.id}
-                                        draggable={!topic.completed}
-                                        onDragStart={() => {
-                                          if (!topic.completed) {
-                                            setDraggedSubject({ 
-                                              ...topic, 
-                                              topicId: topic.id,
-                                              parentSubject: subject.name, 
-                                              subSubject: subSubject.name,
-                                              subjectId: subject.id,
-                                              subSubjectId: subSubject.id,
-                                              color: subject.color 
-                                            });
-                                          }
-                                        }}
-                                        onDragEnd={() => {
-                                          setDraggedSubject(null);
-                                          setDragOverSlot(null);
-                                        }}
-                                        className={`flex items-center space-x-2 p-2 rounded border transition-all ${
-                                          topic.completed 
-                                            ? 'bg-green-50 border-green-200' 
-                                            : `bg-white border-gray-200 hover:shadow-sm ${isDragging ? 'opacity-30 scale-95' : 'hover:scale-105 cursor-grab'}`
-                                        }`}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={topic.completed}
-                                          onChange={(e) => {
-                                            e.stopPropagation();
-                                            if (e.target.checked) {
-                                              markTopicAsCompleted(topic.id, subject.id, subSubject.id);
-                                            }
-                                          }}
-                                          className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                                        />
-                                        <div className={`w-2 h-2 rounded ${subject.color}`}></div>
-                                        <span className={`text-sm flex-1 ${topic.completed ? 'text-green-700 line-through' : 'text-gray-700'}`}>
-                                          {topic.name}
-                                        </span>
-                                        {!topic.completed && (
-                                          <span className="text-xs text-gray-400">Drag to calendar</span>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                              <div className="w-full bg-gray-200 rounded-full h-1">
+                                <div
+                                  className={`h-1 rounded-full ${subject.color}`}
+                                  style={{ width: `${subProgress}%` }}
+                                ></div>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">{Math.round(subProgress)}% complete</div>
                             </div>
                           );
                         })}
@@ -1297,6 +1312,13 @@ const LessonManagementSystem = () => {
                     <div className="flex-1">
                       <div className="font-semibold text-gray-800">{teacher.name}</div>
                       <div className="text-sm text-gray-600">{teacher.subject}</div>
+                      <div className="flex items-center text-sm text-yellow-600">
+                        <Star className="w-3 h-3 mr-1 fill-current" />
+                        {teacher.rating}
+                      </div>
+                      {userType === 'child' && (
+                        <div className="text-xs text-gray-400 italic mt-1">View only</div>
+                      )}
                     </div>
                     <div className="relative">
                       <button
@@ -1357,29 +1379,6 @@ const LessonManagementSystem = () => {
           </div>
         )}
 
-        {/* Weekly Summary */}
-        <div className='flex flex-col'>
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">This Week</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-              <span className="text-sm text-green-700">Lessons Booked</span>
-              <span className="font-semibold text-green-800">
-                {getFilteredLessons().length}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm text-blue-700">Available Slots</span>
-              <span className="font-semibold text-blue-800">156</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-              <span className="text-sm text-purple-700">Total Hours</span>
-              <span className="font-semibold text-purple-800">
-                {getFilteredLessons().reduce((acc, lesson) => acc + (lesson.duration / 60), 0).toFixed(1)}h
-              </span>
-            </div>
-          </div>
-        </div>
-
       </div>
     );
   };
@@ -1422,7 +1421,7 @@ const LessonManagementSystem = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">Lesson Duration</label>
               <div className="grid grid-cols-2 gap-2">
-                {[25, 50].map(duration => (
+                {[30, 60, 90, 120].map(duration => (
                   <button
                     key={duration}
                     onClick={() => setBookingDetails(prev => ({ ...prev, duration }))}
@@ -1431,7 +1430,7 @@ const LessonManagementSystem = () => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                   >
-                    {duration < 60 ? `${duration} min` : `${Math.floor(duration / 60)}h ${duration % 60 > 0 ? `${duration % 60}m` : ''}`}
+                    {duration === 30 ? '30 min' : duration === 60 ? '1 hour' : duration === 90 ? '1.5 hours' : '2 hours'}
                   </button>
                 ))}
               </div>
@@ -1455,22 +1454,6 @@ const LessonManagementSystem = () => {
                 </select>
               </div>
             )}
-
-            {/* Recurring Checkbox */}
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={bookingDetails.recurring}
-                  onChange={(e) => setBookingDetails(prev => ({ ...prev, recurring: e.target.checked }))}
-                  className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
-                />
-                <div>
-                  <span className="text-sm font-semibold text-gray-700">Recur Weekly</span>
-                  <p className="text-xs text-gray-500">Book this lesson for the same time every week</p>
-                </div>
-              </label>
-            </div>
 
             {selectedTeacher && (
               <div className="p-4 bg-green-50 rounded-lg">
@@ -1513,236 +1496,68 @@ const LessonManagementSystem = () => {
     );
   };
 
-  const renderLessonPopup = () => {
-    if (!selectedLessonPopup) return null;
-
-    const { lesson, position } = selectedLessonPopup;
-
-    return (
-      <div
-        className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-48"
-        style={{
-          left: position.x,
-          top: position.y,
-          transform: 'translateY(-50%)'
-        }}
-      >
-        <div className="text-sm font-semibold text-gray-800 mb-2">
-          {lesson.subject}
-        </div>
-        <div className="text-xs text-gray-600 mb-3">
-          {lesson.time} • {dayNames[lesson.day]}
-          {lesson.teacherId && (
-            <div className="mt-1">
-              Teacher: {hiredTeachers.find(t => t.id === lesson.teacherId)?.name}
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          <button
-            onClick={() => handleCancelLesson(lesson)}
-            className="w-full px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50 rounded transition-colors flex items-center"
-          >
-            <X className="w-3 h-3 mr-2" />
-            Cancel Lesson
-          </button>
-          <button
-            onClick={() => handleRescheduleLesson(lesson)}
-            className="w-full px-3 py-2 text-left text-sm text-blue-700 hover:bg-blue-50 rounded transition-colors flex items-center"
-          >
-            <Calendar className="w-3 h-3 mr-2" />
-            Reschedule Lesson
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderRescheduleModal = () => {
-    if (!showRescheduleModal || !rescheduleDetails.lessonToReschedule) return null;
-
-    const lesson = rescheduleDetails.lessonToReschedule;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl shadow-2xl w-96 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Reschedule Lesson</h3>
-            <button
-              onClick={() => setShowRescheduleModal(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          <div className="space-y-6">
-            {/* Current Lesson Info */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm font-semibold text-gray-800 mb-2">Current Lesson</div>
-              <div className="text-sm text-gray-600">
-                <div>{lesson.subject}</div>
-                <div>{dayNames[lesson.day]}, {lesson.time}</div>
-                {lesson.teacherId && (
-                  <div>Teacher: {hiredTeachers.find(t => t.id === lesson.teacherId)?.name}</div>
-                )}
-              </div>
-            </div>
-
-            {/* Day Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">New Day</label>
-              <select
-                value={rescheduleDetails.day}
-                onChange={(e) => setRescheduleDetails(prev => ({ ...prev, day: e.target.value, time: '' }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              >
-                <option value="">Select a day...</option>
-                {dayNames.map((day, index) => (
-                  <option key={index} value={index}>{day}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Time Selection */}
-            {rescheduleDetails.day !== '' && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">New Time</label>
-                <select
-                  value={rescheduleDetails.time}
-                  onChange={(e) => setRescheduleDetails(prev => ({ ...prev, time: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  <option value="">Select a time...</option>
-                  {timeSlots.map(time => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowRescheduleModal(false)}
-                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmReschedule}
-                disabled={!rescheduleDetails.day || !rescheduleDetails.time}
-                className="flex-1 py-3 px-4 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Check className="w-4 h-4 inline mr-2" />
-                Reschedule
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSiloDurationModal = () => {
-    if (!showSiloDurationModal || !siloDurationDetails.draggedSubject) return null;
-
-    const { draggedSubject, dayIndex, timeSlot } = siloDurationDetails;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl shadow-2xl w-96 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Select Class Duration</h3>
-            <button
-              onClick={() => setShowSiloDurationModal(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          <div className="space-y-6">
-            {/* Subject Info */}
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm font-semibold text-gray-800 mb-2">Subject</div>
-              <div className="text-sm text-gray-600">
-                <div>{draggedSubject.parentSubject ? `${draggedSubject.parentSubject} - ${draggedSubject.name}` : draggedSubject.name}</div>
-                <div>{dayNames[dayIndex]}, {timeSlot}</div>
-              </div>
-            </div>
-
-            {/* Duration Selection */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Class Duration</label>
-              <div className="grid grid-cols-2 gap-3">
-                {[25, 50].map(duration => (
-                  <button
-                    key={duration}
-                    onClick={() => setSiloDurationDetails(prev => ({ ...prev, duration }))}
-                    className={`p-4 rounded-lg text-sm font-medium transition-all ${siloDurationDetails.duration === duration
-                      ? 'bg-green-700 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                  >
-                    {duration} minutes
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowSiloDurationModal(false)}
-                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmSiloDuration}
-                className="flex-1 py-3 px-4 bg-green-700 text-white rounded-lg font-medium hover:bg-green-800 transition-colors"
-              >
-                <Check className="w-4 h-4 inline mr-2" />
-                Schedule Class
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-white flex overflow-hidden">
       {/* Tutor Availability Tooltip */}
       {hoveredSlot && (
+        // <div
+        //   className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs"
+        //   style={{
+        //     left: tooltipPosition.x,
+        //     top: tooltipPosition.y,
+        //     transform: 'translateY(-50%)'
+        //   }}
+        // >
+        //   <div className="text-sm font-semibold text-gray-800 mb-2">
+        //     Available Tutors - {hoveredSlot.timeSlot}
+        //   </div>
+        //   <div className="space-y-2">
+        //     {hoveredSlot.availableTeachers.map(teacher => (
+        //       <div key={teacher.id} className="flex items-center space-x-2">
+        //         <div className={`w-6 h-6 rounded-full ${teacher.color} flex items-center justify-center text-white text-xs font-bold`}>
+        //           {teacher.name.charAt(0)}
+        //         </div>
+        //         <div className="flex-1">
+        //           <div className="text-sm font-medium text-gray-800">{teacher.name}</div>
+        //           <div className="text-xs text-gray-600">{teacher.subject}</div>
+        //         </div>
+        //         <div className="flex items-center text-xs text-yellow-600">
+        //           <Star className="w-3 h-3 mr-1 fill-current" />
+        //           {teacher.rating}
+        //         </div>
+        //       </div>
+        //     ))}
+        //   </div>
+        // </div>
         <div
-          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs"
-          style={{
-            left: tooltipPosition.x,
-            top: tooltipPosition.y,
-            transform: 'translateY(-50%)'
-          }}
-        >
-          <div className="text-sm font-semibold text-gray-800 mb-3">
-            Available Tutors - {hoveredSlot.timeSlot}
+    className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-xs"
+    style={{
+      left: tooltipPosition.x,
+      top: tooltipPosition.y,
+      transform: 'translateY(-50%)'
+    }}
+  >
+    <div className="text-sm font-semibold text-gray-800 mb-3">
+      Available Tutors - {hoveredSlot.timeSlot}
+    </div>
+    <div className="space-y-3">
+      {hoveredSlot.availableTeachers.map(teacher => (
+        <div key={teacher.id} className="flex items-center space-x-3">
+          <div className={`w-8 h-8 rounded-full ${teacher.color} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
+            {teacher.name.charAt(0)}
           </div>
-          <div className="space-y-3">
-            {hoveredSlot.availableTeachers.map(teacher => (
-              <div key={teacher.id} className="flex items-center space-x-3">
-                <div className={`w-8 h-8 rounded-full ${teacher.color} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
-                  {teacher.name.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-800">{teacher.name}</div>
-                  <div className="text-xs text-gray-600">{teacher.subject}</div>
-                </div>
-              </div>
-            ))}
+          <div className="flex-1">
+            <div className="text-sm font-medium text-gray-800">{teacher.name}</div>
+            <div className="text-xs text-gray-600">{teacher.subject}</div>
+          </div>
+          <div className="flex items-center text-xs text-yellow-600">
+            <Star className="w-3 h-3 mr-1 fill-current" />
+            {teacher.rating}
           </div>
         </div>
+      ))}
+    </div>
+  </div>
       )}
 
       {/* Sidebar */}
@@ -1753,52 +1568,61 @@ const LessonManagementSystem = () => {
       {/* Main Content */}
       <div className="flex-1 h-screen overflow-y-auto">
         {/* Header with Child Selection */}
-        <div className="bg-white border-b border-gray-200 p-2 sticky top-0 z-20 shadow-sm backdrop-blur-sm">
+        <div className="bg-white border-b border-gray-200 p-2">
+          {/* <div className='w-full flex flex-col items-center mt-1'>
+            <div className='flex items-center justify-center'>
+              <img
+                src="logo.png"
+                alt="RightSteps"
+                className="h-24 bg-white p-1"
+              />
+            </div>
+            <h3 className='text-3xl font-bold text-gray-800 mb-2'>Welcome, User</h3>
+            <p className='text-md text-gray-700 text-center mb-6'>Track learning progress and upcoming activities with insights</p>
+            <div className='relative w-full max-w-lg mb-4'>
+              <input
+                className='bg-gray-100 w-full py-2 pl-10 pr-12 rounded-full !border focus:!border-green-700 focus:ring-2 focus:ring-offset-2 focus:ring-green-700 focus:outline-none text-md focus:bg-white'
+                placeholder='Search'
+              />
+              <button className='absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full'>
+              </button>
+            </div>
+          </div> */}
           <div className="flex items-center justify-between mb-4 p-2">
 
-            <div className="flex items-center space-x-6">
-              {/* Learning Types */}
-              <div className="flex items-center space-x-4">
-                {learningTypes.map(type => (
-                  <div key={type.id} className="flex items-center space-x-2">
-                    <span className={`text-sm font-medium ${
-                      learningType === type.id ? 'text-gray-900' : 'text-gray-700'
-                    }`}>{type.name}</span>
-                    <button
-                      onClick={() => handleLearningTypeToggle(type.id)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                        enabledLearningTypes[type.id]
-                          ? 'bg-green-600'
-                          : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                          enabledLearningTypes[type.id] ? 'translate-x-5' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Auto Schedule Button - Only show when "All" is selected */}
-              {learningType === 'all' && (
-                <button className="px-4 py-2 bg-green-700 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
-                  Auto Schedule Lesson
+            <div className="flex items-center space-x-4">
+              {/* User Type Toggle */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setUserType('parent')}
+                  className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${userType === 'parent' ? 'bg-green-700 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                >
+                  <Users className="w-3 h-3 inline mr-1" />
+                  Parent
                 </button>
-              )}
+                <button
+                  onClick={() => setUserType('child')}
+                  className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${userType === 'child' ? 'bg-green-700 text-white shadow-sm' : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                >
+                  <User className="w-3 h-3 inline mr-1" />
+                  Child
+                </button>
+              </div>
             </div>
 
-            {/* Child Dropdown */}
-            {children.length > 1 && (
+            {/* Child Dropdown (Parent View Only) */}
+            {userType === 'parent' && children.length > 1 && (
               <div className="relative">
                 <button
                   onClick={() => setShowChildDropdown(!showChildDropdown)}
                   className="flex items-center space-x-3 p-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
+                  <span className="text-2xl">{children[selectedChild].avatar}</span>
                   <div className="text-left">
                     <div className="font-semibold text-gray-800">{children[selectedChild].name}</div>
+                    <div className="text-sm text-gray-600">{children[selectedChild].curriculum}</div>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showChildDropdown ? 'rotate-180' : ''}`} />
                 </button>
@@ -1815,10 +1639,14 @@ const LessonManagementSystem = () => {
                         className={`w-full p-3 text-left hover:bg-gray-50 transition-colors ${index !== children.length - 1 ? 'border-b border-gray-100' : ''
                           } ${selectedChild === index ? 'bg-green-50' : ''}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="font-semibold text-gray-800">{child.name}</div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{child.avatar}</span>
+                          <div>
+                            <div className="font-semibold text-gray-800">{child.name}</div>
+                            <div className="text-sm text-gray-600">{child.curriculum} • Age {child.age}</div>
+                          </div>
                           {selectedChild === index && (
-                            <Check className="w-4 h-4 text-green-600" />
+                            <Check className="w-4 h-4 text-green-600 ml-auto" />
                           )}
                         </div>
                       </button>
@@ -1916,18 +1744,8 @@ const LessonManagementSystem = () => {
                 </p>
               </div>
 
-              {/* Legend Indicators */}
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <Circle className="w-3 h-3 fill-current" />
-                  <span>Single</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Repeat className="w-3 h-3" />
-                  <span>Recurring</span>
-                </div>
-              </div>
-
+              {/* Empty div for layout balance */}
+              <div className="w-24"></div>
             </div>
 
             {/* Navigation */}
@@ -2008,15 +1826,6 @@ const LessonManagementSystem = () => {
       {/* Booking Modal */}
       {renderBookingModal()}
 
-      {/* Lesson Popup */}
-      {renderLessonPopup()}
-
-      {/* Reschedule Modal */}
-      {renderRescheduleModal()}
-
-      {/* Silo Duration Selection Modal */}
-      {renderSiloDurationModal()}
-
       {/* Click outside to close dropdown */}
       {showChildDropdown && (
         <div
@@ -2030,14 +1839,6 @@ const LessonManagementSystem = () => {
         <div
           className="fixed inset-0 z-5"
           onClick={() => setShowTutorMenu(null)}
-        />
-      )}
-
-      {/* Click outside to close lesson popup */}
-      {selectedLessonPopup && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setSelectedLessonPopup(null)}
         />
       )}
     </div>
